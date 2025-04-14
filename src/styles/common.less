@@ -1,0 +1,21 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+// 文字溢出省略号
+.text-ellipsis-2 {
+  overflow: hidden;          /* 隐藏超出部分 */
+  -webkit-line-clamp: 2;     /* 限制显示2行 */
+  text-overflow: ellipsis;   /* 超出部分显示省略号 */
+  display: -webkit-box;      /* 使用弹性盒模型 */
+  -webkit-box-orient: vertical; /* 内容垂直排列 */
+}
+
+// 添加导航的通用样式
+.van-nav-bar  {
+  .van-icon {
+    color: #333
+  }
+}
