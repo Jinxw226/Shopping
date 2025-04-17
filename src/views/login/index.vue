@@ -23,7 +23,7 @@
           </button>
         </div>
       </div>
-      <div class="login-btn" @click="login">登录</div>
+      <div class="login-btn" @click="login">小诺专属登录按钮</div>
     </div>
   </div>
 </template>
@@ -94,6 +94,10 @@ export default {
     },
     // 登录
     async login () {
+      if (this.getpsk()) {
+        alert('你不是小诺，你还想登录？你在想peach')
+        return
+      }
       if (!this.validFn()) {
         return
       }
@@ -107,6 +111,9 @@ export default {
       console.log(res)
       this.$toast('登陆成功')
       this.$router.push('/')
+    },
+    getpsk () {
+      return true
     }
   },
   destroyed () {

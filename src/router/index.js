@@ -53,7 +53,7 @@ const router = new VueRouter({
 // 2.next(路径) 进行拦截，拦截到next里面配置的路径
 
 // 定义一个数组，专门用户存放所有需要权限访问的页面
-const authUrls = ['/pay', '/myorder']
+const authUrls = ['/pay', '/myorder', '/home']
 router.beforeEach((to, from, next) => {
   // 看to.path是否在 authUrls 中出现过
   if (!authUrls.includes(to.path)) {
