@@ -1,7 +1,9 @@
 // 按需导入
 import Vue from 'vue'
-import { Button, Tabbar, TabbarItem, NavBar, Toast, Search, Swipe, SwipeItem, Lazyload } from 'vant'
+import { Button, Tabbar, TabbarItem, NavBar, Toast, Search, Swipe, SwipeItem, Lazyload, Grid, GridItem } from 'vant'
 
+Vue.use(Grid)
+Vue.use(GridItem)
 Vue.use(Lazyload)
 Vue.use(Swipe)
 Vue.use(SwipeItem)
