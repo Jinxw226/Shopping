@@ -34,6 +34,9 @@ export default {
   },
   methods: {
     goSearch (str) {
+      if (!str) {
+        return
+      }
       // indexOf查找某一项在数组内的下标
       const index = this.history.indexOf(str)
       if (index !== -1) {

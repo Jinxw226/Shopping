@@ -6,7 +6,7 @@
       readonly
       shape="round"
       background="#ffffff"
-      value="手机"
+      :value="querySearch || '搜索商品' "
       show-action
       @click="$router.push('/search')"
     >
@@ -17,23 +17,61 @@
 
     <!-- 排序选项按钮 -->
     <div class="sort-btns">
-      <div class="sort-item">综合</div>
-      <div class="sort-item">销量</div>
-      <div class="sort-item">价格 </div>
+      <div class="sort-item" @click="sort('all')">综合</div>
+      <div class="sort-item" @click="sort('sales')">销量</div>
+      <div class="sort-item" @click="sort('price')">价格 </div>
     </div>
 
     <div class="goods-list">
-      <GoodsItem v-for="item in 10" :key="item"></GoodsItem>
+      <GoodsItem v-for="item in proList" :key="item.goods_id" :item="item"></GoodsItem>
     </div>
   </div>
 </template>
 
 <script>
+import { getProList } from '@/api/product'
 import GoodsItem from '@/components/GoodsItem.vue'
+
 export default {
   name: 'SearchIndex',
+  data () {
+    return {
+      page: 1,
+      proList: []
+    }
+  },
   components: {
     GoodsItem
+  },
+  computed: {
+    // 获取地址栏的搜索关键字
+    querySearch () {
+      return this.$route.query.search
+    },
+    queryCategoryId () {
+      return this.$route.query.categoryId
+    }
+  },
+  async created () {
+    const { data: { list } } = await getProList({
+      categoryId: this.queryCategoryId,
+      goodsName: this.querySearch,
+      page: this.page
+    })
+    this.proList = list.data
+  },
+  methods: {
+    async sort (str) {
+      const { data: { list } } = await getProList({
+        sortType: str,
+        sortPrice: 1,
+        categoryId: this.queryCategoryId,
+        goodsName: this.querySearch,
+        page: this.page
+      })
+      this.proList = list.data
+      console.log(this.num)
+    }
   }
 }
 </script>
