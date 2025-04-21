@@ -39,52 +39,84 @@
     <!-- 商品评价 -->
     <div class="comment">
       <div class="comment-title">
-        <div class="left">商品评价 (5条)</div>
+        <div class="left">商品评价 ({{total}}条)</div>
         <div class="right">查看更多 <van-icon name="arrow" /> </div>
       </div>
       <div class="comment-list">
-        <div class="comment-item" v-for="item in 3" :key="item">
+        <div class="comment-item" v-for="item in commentList" :key="item.comment_id">
           <div class="top">
-            <img src="http://cba.itlike.com/public/uploads/10001/20230321/a0db9adb2e666a65bc8dd133fbed7834.png" alt="">
-            <div class="name">神雕大侠</div>
-            <van-rate :size="16" :value="5" color="#ffd21e" void-icon="star" void-color="#eee"/>
+            <img :src="item.user.avatar_url || defaultImg" alt="">
+            <div class="name">{{ item.user.nick_name }}</div>
+            <van-rate :size="16" :value="item.score/2" color="#ffd21e" void-icon="star" void-color="#eee"/>
           </div>
           <div class="content">
-            质量很不错 挺喜欢的
+            {{ item.content }}
           </div>
           <div class="time">
-            2023-03-21 15:01:35
+            {{ item.create_time }}
           </div>
         </div>
       </div>
     </div>
 
     <!-- 商品描述 -->
-    <div class="desc">
-      <img src="https://uimgproxy.suning.cn/uimg1/sop/commodity/kHgx21fZMWwqirkMhawkAw.jpg" alt="">
-      <img src="https://uimgproxy.suning.cn/uimg1/sop/commodity/0rRMmncfF0kGjuK5cvLolg.jpg" alt="">
-      <img src="https://uimgproxy.suning.cn/uimg1/sop/commodity/2P04A4Jn0HKxbKYSHc17kw.jpg" alt="">
-      <img src="https://uimgproxy.suning.cn/uimg1/sop/commodity/MT4k-mPd0veQXWPPO5yTIw.jpg" alt="">
+    <div class="desc" v-html="detail.content">
     </div>
 
     <!-- 底部 -->
     <div class="footer">
-      <div class="icon-home">
+      <div @click="$router.push('/')" class="icon-home">
         <van-icon name="wap-home-o" />
         <span>首页</span>
       </div>
-      <div class="icon-cart">
+      <div @click="$router.push('/cart')" class="icon-cart">
+        <span v-if="cartTotal > 0" class="num">{{ cartTotal }}</span>
         <van-icon name="shopping-cart-o" />
         <span>购物车</span>
       </div>
-      <div class="btn-add">加入购物车</div>
-      <div class="btn-buy">立刻购买</div>
+      <div @click="addFn" class="btn-add">加入购物车</div>
+      <div @click="buyFn" class="btn-buy">立刻购买</div>
     </div>
+
+    <!-- 加入购物车的弹层 -->
+    <van-action-sheet v-model="showPannel" :title="mode === 'cart' ? '加入购物车' : '立刻购买'">
+      <div class="product">
+        <div class="product-title">
+          <div class="left">
+            <img :src="detail.goods_image" alt="">
+          </div>
+          <div class="right">
+            <div class="price">
+              <span>¥</span>
+              <span class="nowprice">{{detail.goods_price_min}}</span>
+            </div>
+            <div class="count">
+              <span>库存</span>
+              <span>{{ detail.stock_total }}</span>
+            </div>
+          </div>
+        </div>
+        <div class="num-box">
+          <span>数量</span>
+          <CountBox v-model="addCount" :stock_total="stock_total"></CountBox>
+          <!-- :value 和 @inp 的简写 -->
+        </div>
+        <div class="showbtn" v-if="detail.stock_total > 0">
+          <div class="btn" v-if="mode === 'cart'" @click="addCart">加入购物车</div>
+          <div class="btn now" v-else>立刻购买</div>
+        </div>
+        <div class="btn-none" v-else>该商品已抢完</div>
+      </div>
+    </van-action-sheet>
+
   </div>
 </template>
 
 <script>
-import { getProDetail } from '@/api/product'
+import { getProComments, getProDetail } from '@/api/product'
+import defaultImg from '@/assets/default-avatar.png'
+import CountBox from '@/components/CountBox.vue'
+import { addCart } from '@/api/cart'
 
 export default {
   name: 'ProDetail',
@@ -92,8 +124,19 @@ export default {
     return {
       images: [],
       current: 0,
-      detail: []
+      detail: [],
+      total: 0, // 评价总数
+      commentList: [], // 评价列表
+      defaultImg,
+      showPannel: false,
+      mode: 'cart', // 标记弹层状态
+      addCount: 1, // 数字框绑定的数字
+      stock_total: 0,
+      cartTotal: 0
     }
+  },
+  components: {
+    CountBox
   },
   methods: {
     onChange (index) {
@@ -103,6 +146,49 @@ export default {
       const { data: { detail } } = await getProDetail(this.goodsId)
       this.detail = detail
       this.images = detail.goods_images
+      this.stock_total = detail.stock_total
+    },
+    async getComments () {
+      const { data: { list, total } } = await getProComments(this.goodsId, 3)
+      this.commentList = list
+      this.total = total
+    },
+    addFn () {
+      this.mode = 'cart'
+      this.showPannel = true
+    },
+    buyFn () {
+      this.mode = 'buyNow'
+      this.showPannel = true
+    },
+    async addCart () {
+      // 判断 token 是否存在
+      // 如果不存在，弹确认框
+      // 如果存在，继续请求操作
+      if (!this.$store.getters.token) {
+        // 弹确认框
+        this.$dialog.confirm({
+          title: '温馨提示',
+          message: '此时需要登录才能继续操作哦',
+          confirmButtonText: '去登陆',
+          cancelButtonText: '再逛逛'
+        })
+          .then(() => {
+            // 如果希望跳转到登录 => 登陆后能回跳回来，需要在跳转去携带参数（当前路径地址）
+            this.$router.replace({
+              path: '/login',
+              query: {
+                backUrl: this.$route.fullPath
+              }
+            })
+          })
+          .catch(() => {})
+        return
+      }
+      const { data } = await addCart(this.goodsId, this.addCount, this.detail.skuList[0].goods_sku_id)
+      this.cartTotal = data.cartTotal
+      this.$toast('加入购物车成功')
+      this.showPannel = false
     }
   },
   computed: {
@@ -112,6 +198,7 @@ export default {
   },
   created () {
     this.getDetail()
+    this.getComments()
   }
 }
 </script>
@@ -258,8 +345,74 @@ export default {
     }
   }
 }
+//购物车右上角小图标
+.footer .icon-cart {
+  position: relative;
+  padding: 0 6px;
+  .num {
+    z-index: 999;
+    position: absolute;
+    top: -2px;
+    right: 0;
+    min-width: 16px;
+    padding: 0 4px;
+    color: #fff;
+    text-align: center;
+    background-color: #ee0a24;
+    border-radius: 50%;
+  }
+}
 
 .tips {
   padding: 10px;
+}
+
+// 弹层样式
+.product {
+  .product-title {
+    display: flex;
+    .left {
+      img {
+        width: 90px;
+        height: 90px;
+      }
+      margin: 10px;
+    }
+    .right {
+      flex: 1;
+      padding: 10px;
+      .price {
+        font-size: 14px;
+        color: #fe560a;
+        .nowprice {
+          font-size: 24px;
+          margin: 0 5px;
+        }
+      }
+    }
+  }
+
+  .num-box {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px;
+    align-items: center;
+  }
+
+  .btn, .btn-none {
+    height: 40px;
+    line-height: 40px;
+    margin: 20px;
+    border-radius: 20px;
+    text-align: center;
+    color: rgb(255, 255, 255);
+    background-color: rgb(255, 148, 2);
+  }
+  .btn.now {
+    background-color: #fe5630;
+  }
+  .btn-none {
+    background-color: #cccccc;
+  }
 }
 </style>
